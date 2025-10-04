@@ -30,14 +30,14 @@ export default function InvoiceViewer() {
 								<tr key={i.product._id} className="border-b">
 									<td className="p-2 sm:p-3 font-medium">{i.product.name}</td>
 									<td className="p-2 sm:p-3">{i.qty}</td>
-									<td className="p-2 sm:p-3">${i.price}</td>
-									<td className="p-2 sm:p-3 font-medium">${i.subtotal}</td>
+									<td className="p-2 sm:p-3">₱{i.price}</td>
+									<td className="p-2 sm:p-3 font-medium">₱{i.subtotal}</td>
 								</tr>
 							))}
 						</tbody>
 					</table>
 				</div>
-				<div className="text-right font-bold text-lg sm:text-xl border-t pt-4">Total: ${current.totalAmount}</div>
+				<div className="text-right font-bold text-lg sm:text-xl border-t pt-4">Total: ₱{current.totalAmount}</div>
 			</div>
 		</div>
 	);

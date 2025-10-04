@@ -14,11 +14,22 @@ export default function Inventory() {
 	const [editForm, setEditForm] = useState({ name: '', price: '', stock: 0, category: '' });
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState('');
+	const [showModal, setShowModal] = useState(false);
 	const headers = { Authorization: `Bearer ${token}` };
 
 	useEffect(() => { 
 		dispatch(fetchProducts()); 
 	}, [dispatch]);
+
+	useEffect(() => {
+		const handleEscape = (e) => {
+			if (e.key === 'Escape' && showModal) {
+				closeModal();
+			}
+		};
+		document.addEventListener('keydown', handleEscape);
+		return () => document.removeEventListener('keydown', handleEscape);
+	}, [showModal]);
 
 	const create = async (e) => {
 		e.preventDefault();
@@ -32,12 +43,25 @@ export default function Inventory() {
 			await axios.post(`${API}/products`, { ...form, price: Number(form.price), stock: Number(form.stock) }, { headers });
 			setForm({ name: '', sku: '', price: '', stock: 0, category: '' });
 			setMessage('Product created successfully!');
+			setShowModal(false);
 			dispatch(fetchProducts());
 		} catch (err) {
 			setMessage(err.response?.data?.message || 'Failed to create product');
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const openModal = () => {
+		setForm({ name: '', sku: '', price: '', stock: 0, category: '' });
+		setMessage('');
+		setShowModal(true);
+	};
+
+	const closeModal = () => {
+		setShowModal(false);
+		setForm({ name: '', sku: '', price: '', stock: 0, category: '' });
+		setMessage('');
 	};
 
 	const startEdit = (p) => {
@@ -84,50 +108,12 @@ export default function Inventory() {
 			<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
 				<h1 className="text-2xl sm:text-3xl font-bold">Inventory</h1>
 				{user?.role === 'admin' && (
-					<form onSubmit={create} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-						<input 
-							className="border p-2 rounded text-base" 
-							placeholder="Name *" 
-							value={form.name} 
-							onChange={(e)=>setForm({...form,name:e.target.value})} 
-							required
-						/>
-						<input 
-							className="border p-2 rounded text-base" 
-							placeholder="SKU *" 
-							value={form.sku} 
-							onChange={(e)=>setForm({...form,sku:e.target.value})} 
-							required
-						/>
-						<input 
-							className="border p-2 rounded text-base sm:w-24" 
-							placeholder="Price *" 
-							type="number"
-							step="0.01"
-							value={form.price} 
-							onChange={(e)=>setForm({...form,price:e.target.value})} 
-							required
-						/>
-						<input 
-							className="border p-2 rounded text-base sm:w-24" 
-							placeholder="Stock" 
-							type="number"
-							value={form.stock} 
-							onChange={(e)=>setForm({...form,stock:e.target.value})} 
-						/>
-						<input 
-							className="border p-2 rounded text-base" 
-							placeholder="Category" 
-							value={form.category} 
-							onChange={(e)=>setForm({...form,category:e.target.value})} 
-						/>
-						<button 
-							className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50 transition-colors text-base touch-manipulation" 
-							disabled={loading}
-						>
-							{loading ? 'Adding...' : 'Add'}
-						</button>
-					</form>
+					<button 
+						onClick={openModal}
+						className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded disabled:opacity-50 transition-colors text-base touch-manipulation"
+					>
+						Add New Item
+					</button>
 				)}
 			</div>
 			
@@ -142,6 +128,107 @@ export default function Inventory() {
 			{error && (
 				<div className="mb-4 p-3 rounded bg-red-100 text-red-800">
 					Error: {error}
+				</div>
+			)}
+
+			{/* Add Item Modal */}
+			{showModal && (
+				<div 
+					className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4"
+					onClick={(e) => e.target === e.currentTarget && closeModal()}
+				>
+					<div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+						<div className="flex justify-between items-center p-6 border-b">
+							<h2 className="text-xl font-semibold">Add New Item</h2>
+							<button 
+								onClick={closeModal}
+								className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+							>
+								×
+							</button>
+						</div>
+						<form onSubmit={create} className="p-6 space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Product Name *
+								</label>
+								<input 
+									className="w-full border border-gray-300 p-3 rounded-md text-base focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+									placeholder="Enter product name" 
+									value={form.name} 
+									onChange={(e)=>setForm({...form,name:e.target.value})} 
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									SKU *
+								</label>
+								<input 
+									className="w-full border border-gray-300 p-3 rounded-md text-base focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+									placeholder="Enter SKU" 
+									value={form.sku} 
+									onChange={(e)=>setForm({...form,sku:e.target.value})} 
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Price *
+								</label>
+								<input 
+									className="w-full border border-gray-300 p-3 rounded-md text-base focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+									placeholder="0.00" 
+									type="number"
+									step="0.01"
+									min="0"
+									value={form.price} 
+									onChange={(e)=>setForm({...form,price:e.target.value})} 
+									required
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Stock Quantity
+								</label>
+								<input 
+									className="w-full border border-gray-300 p-3 rounded-md text-base focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+									placeholder="0" 
+									type="number"
+									min="0"
+									value={form.stock} 
+									onChange={(e)=>setForm({...form,stock:e.target.value})} 
+								/>
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Category
+								</label>
+								<input 
+									className="w-full border border-gray-300 p-3 rounded-md text-base focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+									placeholder="Enter category" 
+									value={form.category} 
+									onChange={(e)=>setForm({...form,category:e.target.value})} 
+								/>
+							</div>
+							<div className="flex gap-3 pt-4">
+								<button 
+									type="button"
+									onClick={closeModal}
+									className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-3 rounded-md transition-colors text-base"
+								>
+									Cancel
+								</button>
+								<button 
+									type="submit"
+									className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-md disabled:opacity-50 transition-colors text-base" 
+									disabled={loading}
+								>
+									{loading ? 'Adding...' : 'Add Item'}
+								</button>
+							</div>
+						</form>
+					</div>
 				</div>
 			)}
 			<div className="overflow-x-auto border rounded">
@@ -173,19 +260,20 @@ export default function Inventory() {
 								items.map(p => (
 							<tr key={p._id} className="border-b">
 								<td className="p-2 sm:p-3">
-									<div className="flex flex-col sm:block">
-										<span className="font-medium">{p.name}</span>
-										<span className="text-xs text-gray-600 sm:hidden">{p.sku}</span>
-									</div>
-									{editingId===p._id && (
-										<input className="border p-1 rounded w-full mt-1" value={editForm.name} onChange={(e)=>setEditForm({...editForm,name:e.target.value})} />
+									{editingId===p._id ? (
+										<input className="border p-1 rounded w-full" value={editForm.name} onChange={(e)=>setEditForm({...editForm,name:e.target.value})} />
+									) : (
+										<div className="flex flex-col sm:block">
+											<span className="font-medium">{p.name}</span>
+											<span className="text-xs text-gray-600 sm:hidden">{p.sku}</span>
+										</div>
 									)}
 								</td>
 								<td className="p-2 sm:p-3 text-xs text-gray-600 hidden sm:table-cell">{p.sku}</td>
 								<td className="p-2 sm:p-3">
 									{editingId===p._id ? (
 										<input className="border p-1 rounded w-20 sm:w-24" value={editForm.price} onChange={(e)=>setEditForm({...editForm,price:e.target.value})} />
-									) : `$${p.price}`}
+									) : `₱${p.price}`}
 								</td>
 								<td className="p-2 sm:p-3">
 									{editingId===p._id ? (
