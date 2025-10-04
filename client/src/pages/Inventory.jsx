@@ -80,27 +80,27 @@ export default function Inventory() {
 	};
 
 	return (
-		<div>
-			<div className="flex items-center justify-between mb-4">
-				<h1 className="text-2xl font-bold">Inventory</h1>
+		<div className="p-4 sm:p-6">
+			<div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+				<h1 className="text-2xl sm:text-3xl font-bold">Inventory</h1>
 				{user?.role === 'admin' && (
-					<form onSubmit={create} className="flex gap-2">
+					<form onSubmit={create} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
 						<input 
-							className="border p-2 rounded" 
+							className="border p-2 rounded text-base" 
 							placeholder="Name *" 
 							value={form.name} 
 							onChange={(e)=>setForm({...form,name:e.target.value})} 
 							required
 						/>
 						<input 
-							className="border p-2 rounded" 
+							className="border p-2 rounded text-base" 
 							placeholder="SKU *" 
 							value={form.sku} 
 							onChange={(e)=>setForm({...form,sku:e.target.value})} 
 							required
 						/>
 						<input 
-							className="border p-2 rounded w-24" 
+							className="border p-2 rounded text-base sm:w-24" 
 							placeholder="Price *" 
 							type="number"
 							step="0.01"
@@ -109,20 +109,20 @@ export default function Inventory() {
 							required
 						/>
 						<input 
-							className="border p-2 rounded w-24" 
+							className="border p-2 rounded text-base sm:w-24" 
 							placeholder="Stock" 
 							type="number"
 							value={form.stock} 
 							onChange={(e)=>setForm({...form,stock:e.target.value})} 
 						/>
 						<input 
-							className="border p-2 rounded" 
+							className="border p-2 rounded text-base" 
 							placeholder="Category" 
 							value={form.category} 
 							onChange={(e)=>setForm({...form,category:e.target.value})} 
 						/>
 						<button 
-							className="bg-green-600 text-white px-4 rounded disabled:opacity-50" 
+							className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50 transition-colors text-base touch-manipulation" 
 							disabled={loading}
 						>
 							{loading ? 'Adding...' : 'Add'}
@@ -144,22 +144,22 @@ export default function Inventory() {
 					Error: {error}
 				</div>
 			)}
-			<div className="overflow-auto border rounded">
+			<div className="overflow-x-auto border rounded">
 				{status === 'loading' ? (
 					<div className="p-8 text-center">
 						<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
 						<p className="mt-2 text-gray-600">Loading products...</p>
 					</div>
 				) : (
-					<table className="w-full text-left">
+					<table className="w-full text-left min-w-[600px]">
 						<thead>
 							<tr className="border-b bg-gray-100 text-sm">
-								<th className="p-2">Name</th>
-								<th className="p-2">SKU</th>
-								<th className="p-2">Price</th>
-								<th className="p-2">Stock</th>
-								<th className="p-2">Category</th>
-								{user?.role==='admin' && <th className="p-2">Actions</th>}
+								<th className="p-2 sm:p-3">Name</th>
+								<th className="p-2 sm:p-3 hidden sm:table-cell">SKU</th>
+								<th className="p-2 sm:p-3">Price</th>
+								<th className="p-2 sm:p-3">Stock</th>
+								<th className="p-2 sm:p-3 hidden md:table-cell">Category</th>
+								{user?.role==='admin' && <th className="p-2 sm:p-3">Actions</th>}
 							</tr>
 						</thead>
 						<tbody>
@@ -172,40 +172,44 @@ export default function Inventory() {
 							) : (
 								items.map(p => (
 							<tr key={p._id} className="border-b">
-								<td className="p-2">
-									{editingId===p._id ? (
-										<input className="border p-1 rounded w-full" value={editForm.name} onChange={(e)=>setEditForm({...editForm,name:e.target.value})} />
-									) : p.name}
+								<td className="p-2 sm:p-3">
+									<div className="flex flex-col sm:block">
+										<span className="font-medium">{p.name}</span>
+										<span className="text-xs text-gray-600 sm:hidden">{p.sku}</span>
+									</div>
+									{editingId===p._id && (
+										<input className="border p-1 rounded w-full mt-1" value={editForm.name} onChange={(e)=>setEditForm({...editForm,name:e.target.value})} />
+									)}
 								</td>
-								<td className="p-2 text-xs text-gray-600">{p.sku}</td>
-								<td className="p-2">
+								<td className="p-2 sm:p-3 text-xs text-gray-600 hidden sm:table-cell">{p.sku}</td>
+								<td className="p-2 sm:p-3">
 									{editingId===p._id ? (
-										<input className="border p-1 rounded w-24" value={editForm.price} onChange={(e)=>setEditForm({...editForm,price:e.target.value})} />
+										<input className="border p-1 rounded w-20 sm:w-24" value={editForm.price} onChange={(e)=>setEditForm({...editForm,price:e.target.value})} />
 									) : `$${p.price}`}
 								</td>
-								<td className="p-2">
+								<td className="p-2 sm:p-3">
 									{editingId===p._id ? (
-										<input className="border p-1 rounded w-20" value={editForm.stock} onChange={(e)=>setEditForm({...editForm,stock:e.target.value})} />
+										<input className="border p-1 rounded w-16 sm:w-20" value={editForm.stock} onChange={(e)=>setEditForm({...editForm,stock:e.target.value})} />
 									) : p.stock}
 								</td>
-								<td className="p-2">
+								<td className="p-2 sm:p-3 hidden md:table-cell">
 									{editingId===p._id ? (
-										<input className="border p-1 rounded" value={editForm.category} onChange={(e)=>setEditForm({...editForm,category:e.target.value})} />
+										<input className="border p-1 rounded w-full" value={editForm.category} onChange={(e)=>setEditForm({...editForm,category:e.target.value})} />
 									) : (p.category || '-')}
 								</td>
 								{user?.role==='admin' && (
-									<td className="p-2">
+									<td className="p-2 sm:p-3">
 										{editingId===p._id ? (
-											<div className="flex gap-2">
+											<div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
 												<button 
-													className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50" 
+													className="px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
 													onClick={()=>saveEdit(p._id)}
 													disabled={loading}
 												>
 													{loading ? 'Saving...' : 'Save'}
 												</button>
 												<button 
-													className="px-3 py-1 bg-gray-200 rounded" 
+													className="px-2 sm:px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs sm:text-sm transition-colors touch-manipulation" 
 													onClick={()=>setEditingId(null)}
 													disabled={loading}
 												>
@@ -213,16 +217,16 @@ export default function Inventory() {
 												</button>
 											</div>
 										) : (
-											<div className="flex gap-2">
+											<div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
 												<button 
-													className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-50" 
+													className="px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
 													onClick={()=>startEdit(p)}
 													disabled={loading}
 												>
 													Edit
 												</button>
 												<button 
-													className="px-3 py-1 bg-red-600 text-white rounded disabled:opacity-50" 
+													className="px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
 													onClick={()=>remove(p._id)}
 													disabled={loading}
 												>

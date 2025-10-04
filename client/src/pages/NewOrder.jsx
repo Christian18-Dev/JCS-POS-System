@@ -38,30 +38,48 @@ export default function NewOrder() {
 	};
 
 	return (
-		<div className="grid grid-cols-2 gap-4">
-			<div>
-				<h2 className="font-semibold mb-2">Products</h2>
-				<ul className="space-y-2">
-					{products.map(p => (
-						<li key={p._id} className="flex justify-between border p-2">
-							<span>{p.name} (${p.price})</span>
-							<button className="bg-blue-600 text-white px-2" onClick={() => addToCart(p)}>Add</button>
-						</li>
-					))}
-				</ul>
-			</div>
-			<div>
-				<h2 className="font-semibold mb-2">Cart</h2>
-				<ul className="space-y-2 mb-2">
-					{cart.map(i => (
-						<li key={i.product} className="flex justify-between border p-2">
-							<span>{i.name} x {i.qty}</span>
-							<span>${(i.price * i.qty).toFixed(2)}</span>
-						</li>
-					))}
-				</ul>
-				<div className="font-bold mb-2">Total: ${total.toFixed(2)}</div>
-				<button className="bg-green-600 text-white px-3 py-2" onClick={createOrder} disabled={!cart.length}>Confirm Order</button>
+		<div className="p-4 sm:p-6">
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div>
+					<h2 className="font-semibold text-lg sm:text-xl mb-4">Products</h2>
+					<ul className="space-y-3">
+						{products.map(p => (
+							<li key={p._id} className="flex flex-col sm:flex-row sm:justify-between gap-2 border p-3 rounded-lg">
+								<div className="flex-1">
+									<span className="font-medium">{p.name}</span>
+									<span className="text-gray-600 ml-2">(${p.price})</span>
+								</div>
+								<button 
+									className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors text-sm sm:text-base touch-manipulation" 
+									onClick={() => addToCart(p)}
+								>
+									Add
+								</button>
+							</li>
+						))}
+					</ul>
+				</div>
+				<div>
+					<h2 className="font-semibold text-lg sm:text-xl mb-4">Cart</h2>
+					<div className="border rounded-lg p-4">
+						<ul className="space-y-3 mb-4">
+							{cart.map(i => (
+								<li key={i.product} className="flex justify-between items-center border-b pb-2">
+									<span className="text-sm sm:text-base">{i.name} x {i.qty}</span>
+									<span className="font-medium">${(i.price * i.qty).toFixed(2)}</span>
+								</li>
+							))}
+						</ul>
+						<div className="font-bold text-lg mb-4 border-t pt-3">Total: ${total.toFixed(2)}</div>
+						<button 
+							className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base touch-manipulation" 
+							onClick={createOrder} 
+							disabled={!cart.length}
+						>
+							Confirm Order
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
