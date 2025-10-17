@@ -69,6 +69,9 @@ export const confirmOrder = async (req, res) => {
 
     const invoice = await createInvoiceForOrder(order, { session });
 
+    // Populate the order with product details before returning
+    await order.populate('items.product');
+
     await session.commitTransaction();
     session.endSession();
     res.json({ order, invoice });

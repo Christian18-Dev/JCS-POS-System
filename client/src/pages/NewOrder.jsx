@@ -484,18 +484,24 @@ export default function NewOrder() {
 								<div className="bg-gray-50 rounded-lg p-4">
 									<h3 className="text-lg font-semibold text-gray-900 mb-3">Items Ordered</h3>
 									<div className="space-y-2">
-										{lastOrder.items.map((item, index) => (
-											<div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-												<div className="flex-1">
-													<p className="font-medium text-gray-900">{item.product.name}</p>
-													<p className="text-sm text-gray-600">Qty: {item.qty}</p>
+										{lastOrder.items && lastOrder.items.length > 0 ? (
+											lastOrder.items.map((item, index) => (
+												<div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+													<div className="flex-1">
+														<p className="font-medium text-gray-900">{item.product?.name || 'Unknown Product'}</p>
+														<p className="text-sm text-gray-600">Qty: {item.qty}</p>
+													</div>
+													<div className="text-right">
+														<p className="font-medium">₱{((item.product?.price || 0) * item.qty).toFixed(2)}</p>
+														<p className="text-sm text-gray-600">₱{item.product?.price || 0} each</p>
+													</div>
 												</div>
-												<div className="text-right">
-													<p className="font-medium">₱{(item.product.price * item.qty).toFixed(2)}</p>
-													<p className="text-sm text-gray-600">₱{item.product.price} each</p>
-												</div>
+											))
+										) : (
+											<div className="text-center py-4 text-gray-500">
+												<p>No items found in this order.</p>
 											</div>
-										))}
+										)}
 									</div>
 								</div>
 
@@ -503,7 +509,7 @@ export default function NewOrder() {
 								<div className="bg-blue-50 rounded-lg p-4">
 									<div className="flex justify-between items-center">
 										<span className="text-xl font-semibold text-gray-900">Total Amount:</span>
-										<span className="text-2xl font-bold text-blue-600">₱{lastOrder.total.toFixed(2)}</span>
+										<span className="text-2xl font-bold text-blue-600">₱{(lastOrder.total || 0).toFixed(2)}</span>
 									</div>
 								</div>
 							</div>
