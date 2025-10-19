@@ -13,9 +13,24 @@ export const createProduct = async (req, res) => {
   }
 };
 
-export const listProducts = async (_req, res) => {
-  const products = await Product.find().sort({ createdAt: -1 });
-  res.json(products);
+export const listProducts = async (req, res) => {
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+  const skip = (page - 1) * limit;
+
+  const totalItems = await Product.countDocuments();
+  const products = await Product.find()
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  res.json({
+    items: products,
+    page,
+    pageSize: limit,
+    totalItems,
+    totalPages: Math.max(Math.ceil(totalItems / limit), 1),
+  });
 };
 
 export const getProduct = async (req, res) => {

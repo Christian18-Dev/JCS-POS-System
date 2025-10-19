@@ -10,9 +10,12 @@ const authHeader = (getState) => {
 	return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export const fetchProducts = createAsyncThunk('products/fetch', async (_, thunkAPI) => {
+export const fetchProducts = createAsyncThunk('products/fetch', async ({ page = 1, limit = 10 } = {}, thunkAPI) => {
 	try {
-		const res = await axios.get(`${API}/products`, { headers: authHeader(thunkAPI.getState) });
+		const res = await axios.get(`${API}/products`, { 
+			headers: authHeader(thunkAPI.getState),
+			params: { page, limit }
+		});
 		return res.data;
 	} catch (err) {
 		return thunkAPI.rejectWithValue('Failed to fetch');
@@ -21,7 +24,7 @@ export const fetchProducts = createAsyncThunk('products/fetch', async (_, thunkA
 
 const productsSlice = createSlice({
 	name: 'products',
-	initialState: { items: [], status: 'idle', error: null },
+	initialState: { items: [], page: 1, pageSize: 10, totalPages: 1, totalItems: 0, status: 'idle', error: null },
 	reducers: {},
 	extraReducers: (builder) => {
 		builder
@@ -30,7 +33,11 @@ const productsSlice = createSlice({
 			})
 			.addCase(fetchProducts.fulfilled, (state, action) => {
 				state.status = 'succeeded';
-				state.items = action.payload;
+				state.items = action.payload.items;
+				state.page = action.payload.page;
+				state.pageSize = action.payload.pageSize;
+				state.totalPages = action.payload.totalPages;
+				state.totalItems = action.payload.totalItems;
 			})
 			.addCase(fetchProducts.rejected, (state, action) => {
 				state.status = 'failed';

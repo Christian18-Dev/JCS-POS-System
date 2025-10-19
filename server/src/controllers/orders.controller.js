@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Order } from '../models/Order.js';
 import { Product } from '../models/Product.js';
+import { Invoice } from '../models/Invoice.js';
 import { createInvoiceForOrder } from '../utils/invoice.js';
 
 export const createOrder = async (req, res) => {
@@ -28,9 +29,39 @@ export const createOrder = async (req, res) => {
   }
 };
 
-export const listOrders = async (_req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 }).populate('items.product');
-  res.json(orders);
+export const listOrders = async (req, res) => {
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+  const skip = (page - 1) * limit;
+
+  const totalItems = await Order.countDocuments();
+  const orders = await Order.find()
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate('items.product');
+
+  // Add invoice information to each order
+  const ordersWithInvoices = await Promise.all(
+    orders.map(async (order) => {
+      const invoice = await Invoice.findOne({ orderId: order._id });
+      return {
+        ...order.toObject(),
+        invoice: invoice ? { 
+          invoiceNumber: invoice.invoiceNumber,
+          customerName: invoice.customerName 
+        } : null,
+      };
+    })
+  );
+
+  res.json({
+    items: ordersWithInvoices,
+    page,
+    pageSize: limit,
+    totalItems,
+    totalPages: Math.max(Math.ceil(totalItems / limit), 1),
+  });
 };
 
 export const getOrder = async (req, res) => {
@@ -43,6 +74,7 @@ export const confirmOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
+    const { customerName } = req.body;
     const order = await Order.findById(req.params.id).session(session);
     if (!order) {
       await session.abortTransaction();
@@ -67,7 +99,10 @@ export const confirmOrder = async (req, res) => {
     order.status = 'confirmed';
     await order.save({ session });
 
-    const invoice = await createInvoiceForOrder(order, { session });
+    const invoice = await createInvoiceForOrder(order, { 
+      session, 
+      customerName: customerName || ''
+    });
 
     // Populate the order with product details before returning
     await order.populate('items.product');

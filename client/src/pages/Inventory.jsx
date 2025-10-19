@@ -9,7 +9,7 @@ const API = import.meta.env.VITE_API_URL ?
 
 export default function Inventory() {
 	const dispatch = useDispatch();
-	const { items, status, error } = useSelector((s) => s.products);
+	const { items, page, totalPages, totalItems, pageSize, status, error } = useSelector((s) => s.products);
 	const { token, user } = useSelector((s) => s.auth);
 	const [form, setForm] = useState({ name: '', sku: '', price: '', stock: 0, category: '' });
 	const [editingId, setEditingId] = useState(null);
@@ -20,8 +20,13 @@ export default function Inventory() {
 	const headers = { Authorization: `Bearer ${token}` };
 
 	useEffect(() => { 
-		dispatch(fetchProducts()); 
+		dispatch(fetchProducts({ page: 1, limit: 10 })); 
 	}, [dispatch]);
+
+	const goToPage = (p) => {
+		if (p < 1 || p > totalPages) return;
+		dispatch(fetchProducts({ page: p, limit: pageSize || 10 }));
+	};
 
 	useEffect(() => {
 		const handleEscape = (e) => {
@@ -46,7 +51,7 @@ export default function Inventory() {
 			setForm({ name: '', sku: '', price: '', stock: 0, category: '' });
 			setMessage('Product created successfully!');
 			setShowModal(false);
-			dispatch(fetchProducts());
+			dispatch(fetchProducts({ page, limit: pageSize || 10 }));
 		} catch (err) {
 			setMessage(err.response?.data?.message || 'Failed to create product');
 		} finally {
@@ -82,7 +87,7 @@ export default function Inventory() {
 			await axios.put(`${API}/products/${id}`, { ...editForm, price: Number(editForm.price), stock: Number(editForm.stock) }, { headers });
 			setEditingId(null);
 			setMessage('Product updated successfully!');
-			dispatch(fetchProducts());
+			dispatch(fetchProducts({ page, limit: pageSize || 10 }));
 		} catch (err) {
 			setMessage(err.response?.data?.message || 'Failed to update product');
 		} finally {
@@ -97,7 +102,7 @@ export default function Inventory() {
 		try {
 			await axios.delete(`${API}/products/${id}`, { headers });
 			setMessage('Product deleted successfully!');
-			dispatch(fetchProducts());
+			dispatch(fetchProducts({ page, limit: pageSize || 10 }));
 		} catch (err) {
 			setMessage(err.response?.data?.message || 'Failed to delete product');
 		} finally {
@@ -251,87 +256,121 @@ export default function Inventory() {
 								{user?.role==='admin' && <th className="p-2 sm:p-3">Actions</th>}
 							</tr>
 						</thead>
-						<tbody>
-							{items.length === 0 ? (
-								<tr>
-									<td colSpan={user?.role==='admin' ? 6 : 5} className="p-8 text-center text-gray-500">
-										No products found. {user?.role==='admin' && 'Add your first product above!'}
-									</td>
-								</tr>
-							) : (
-								items.map(p => (
-							<tr key={p._id} className="border-b">
-								<td className="p-2 sm:p-3">
-									{editingId===p._id ? (
-										<input className="border p-1 rounded w-full" value={editForm.name} onChange={(e)=>setEditForm({...editForm,name:e.target.value})} />
-									) : (
-										<div className="flex flex-col sm:block">
-											<span className="font-medium">{p.name}</span>
-											<span className="text-xs text-gray-600 sm:hidden">{p.sku}</span>
-										</div>
-									)}
-								</td>
-								<td className="p-2 sm:p-3 text-xs text-gray-600 hidden sm:table-cell">{p.sku}</td>
-								<td className="p-2 sm:p-3">
-									{editingId===p._id ? (
-										<input className="border p-1 rounded w-20 sm:w-24" value={editForm.price} onChange={(e)=>setEditForm({...editForm,price:e.target.value})} />
-									) : `₱${p.price}`}
-								</td>
-								<td className="p-2 sm:p-3">
-									{editingId===p._id ? (
-										<input className="border p-1 rounded w-16 sm:w-20" value={editForm.stock} onChange={(e)=>setEditForm({...editForm,stock:e.target.value})} />
-									) : p.stock}
-								</td>
-								<td className="p-2 sm:p-3 hidden md:table-cell">
-									{editingId===p._id ? (
-										<input className="border p-1 rounded w-full" value={editForm.category} onChange={(e)=>setEditForm({...editForm,category:e.target.value})} />
-									) : (p.category || '-')}
-								</td>
-								{user?.role==='admin' && (
-									<td className="p-2 sm:p-3">
-										{editingId===p._id ? (
-											<div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-												<button 
-													className="px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
-													onClick={()=>saveEdit(p._id)}
-													disabled={loading}
-												>
-													{loading ? 'Saving...' : 'Save'}
-												</button>
-												<button 
-													className="px-2 sm:px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs sm:text-sm transition-colors touch-manipulation" 
-													onClick={()=>setEditingId(null)}
-													disabled={loading}
-												>
-													Cancel
-												</button>
-											</div>
-										) : (
-											<div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-												<button 
-													className="px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
-													onClick={()=>startEdit(p)}
-													disabled={loading}
-												>
-													Edit
-												</button>
-												<button 
-													className="px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
-													onClick={()=>remove(p._id)}
-													disabled={loading}
-												>
-													{loading ? 'Deleting...' : 'Delete'}
-												</button>
-											</div>
-										)}
-									</td>
-								)}
-							</tr>
-								))
-							)}
+						<tbody className="h-[400px]">
+							{Array.from({ length: 10 }, (_, index) => {
+								const product = items[index];
+								if (product) {
+									return (
+										<tr key={product._id} className="border-b">
+											<td className="p-2 sm:p-3">
+												{editingId===product._id ? (
+													<input className="border p-1 rounded w-full" value={editForm.name} onChange={(e)=>setEditForm({...editForm,name:e.target.value})} />
+												) : (
+													<div className="flex flex-col sm:block">
+														<span className="font-medium">{product.name}</span>
+														<span className="text-xs text-gray-600 sm:hidden">{product.sku}</span>
+													</div>
+												)}
+											</td>
+											<td className="p-2 sm:p-3 text-xs text-gray-600 hidden sm:table-cell">{product.sku}</td>
+											<td className="p-2 sm:p-3">
+												{editingId===product._id ? (
+													<input className="border p-1 rounded w-20 sm:w-24" value={editForm.price} onChange={(e)=>setEditForm({...editForm,price:e.target.value})} />
+												) : `₱${product.price}`}
+											</td>
+											<td className="p-2 sm:p-3">
+												{editingId===product._id ? (
+													<input className="border p-1 rounded w-16 sm:w-20" value={editForm.stock} onChange={(e)=>setEditForm({...editForm,stock:e.target.value})} />
+												) : product.stock}
+											</td>
+											<td className="p-2 sm:p-3 hidden md:table-cell">
+												{editingId===product._id ? (
+													<input className="border p-1 rounded w-full" value={editForm.category} onChange={(e)=>setEditForm({...editForm,category:e.target.value})} />
+												) : (product.category || '-')}
+											</td>
+											{user?.role==='admin' && (
+												<td className="p-2 sm:p-3">
+													{editingId===product._id ? (
+														<div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+															<button 
+																className="px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
+																onClick={()=>saveEdit(product._id)}
+																disabled={loading}
+															>
+																{loading ? 'Saving...' : 'Save'}
+															</button>
+															<button 
+																className="px-2 sm:px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs sm:text-sm transition-colors touch-manipulation" 
+																onClick={()=>setEditingId(null)}
+																disabled={loading}
+															>
+																Cancel
+															</button>
+														</div>
+													) : (
+														<div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+															<button 
+																className="px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
+																onClick={()=>startEdit(product)}
+																disabled={loading}
+															>
+																Edit
+															</button>
+															<button 
+																className="px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50 text-xs sm:text-sm transition-colors touch-manipulation" 
+																onClick={()=>remove(product._id)}
+																disabled={loading}
+															>
+																{loading ? 'Deleting...' : 'Delete'}
+															</button>
+														</div>
+													)}
+												</td>
+											)}
+										</tr>
+									);
+								} else {
+									return (
+										<tr key={`empty-${index}`} className="border-b">
+											<td className="p-2 sm:p-3">&nbsp;</td>
+											<td className="p-2 sm:p-3 text-xs text-gray-600 hidden sm:table-cell">&nbsp;</td>
+											<td className="p-2 sm:p-3">&nbsp;</td>
+											<td className="p-2 sm:p-3">&nbsp;</td>
+											<td className="p-2 sm:p-3 hidden md:table-cell">&nbsp;</td>
+											{user?.role==='admin' && (
+												<td className="p-2 sm:p-3">&nbsp;</td>
+											)}
+										</tr>
+									);
+								}
+							})}
 						</tbody>
 					</table>
 				)}
+			</div>
+			
+			{/* Pagination Controls */}
+			<div className="flex items-center justify-between mt-4">
+				<p className="text-xs sm:text-sm text-gray-500">
+					Showing {items.length} of {totalItems} products
+				</p>
+				<div className="flex items-center space-x-2">
+					<button
+						className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors"
+						disabled={page <= 1}
+						onClick={() => goToPage(page - 1)}
+					>
+						Prev
+					</button>
+					<span className="text-sm">Page {page} of {totalPages}</span>
+					<button
+						className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors"
+						disabled={page >= totalPages}
+						onClick={() => goToPage(page + 1)}
+					>
+						Next
+					</button>
+				</div>
 			</div>
 		</div>
 	);

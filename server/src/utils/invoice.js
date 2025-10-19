@@ -1,17 +1,30 @@
 import { Invoice } from '../models/Invoice.js';
 
+// Return the next 6-digit invoice number as a zero-padded string starting at 000001
 const generateInvoiceNumber = async () => {
-  // Simple unique sequence: INV-YYYYMMDD-XXXX
-  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randomPart = Math.floor(1000 + Math.random() * 9000);
-  return `INV-${datePart}-${randomPart}`;
+  try {
+    // Only consider purely numeric 6-digit invoice numbers; ignore legacy formats like INV-YYYY...
+    const numericPattern = new RegExp('^\\\d{6}$');
+    const lastNumeric = await Invoice
+      .find({ invoiceNumber: { $regex: numericPattern } })
+      .sort({ invoiceNumber: -1 })
+      .limit(1)
+      .lean();
+
+    const last = lastNumeric[0]?.invoiceNumber;
+    const lastNumber = last ? parseInt(last, 10) : 0;
+    const nextNumber = (Number.isFinite(lastNumber) ? lastNumber : 0) + 1;
+    return String(nextNumber).padStart(6, '0');
+  } catch (error) {
+    throw new Error('Failed to generate invoice number: ' + error.message);
+  }
 };
 
 export const createInvoiceForOrder = async (order, { session, customerName, customerContact } = {}) => {
-  let invoiceNumber = await generateInvoiceNumber();
-  // Ensure uniqueness by retrying a couple of times on collision
-  for (let i = 0; i < 3; i++) {
+  // Minimal retry on duplicate key races
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
+      const invoiceNumber = await generateInvoiceNumber();
       const invoice = await Invoice.create([
         {
           invoiceNumber,
@@ -24,10 +37,8 @@ export const createInvoiceForOrder = async (order, { session, customerName, cust
       ], { session });
       return invoice[0];
     } catch (err) {
-      if (err && err.code === 11000) {
-        invoiceNumber = await generateInvoiceNumber();
-        continue;
-      }
+      // 11000 duplicate key error -> try again
+      if (err && err.code === 11000) continue;
       throw err;
     }
   }
