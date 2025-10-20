@@ -56,11 +56,23 @@ const ordersSlice = createSlice({
 				state.totalItems = action.payload.totalItems;
 			})
 			.addCase(createOrder.fulfilled, (state, action) => {
-				state.items.unshift(action.payload);
+				// Only add to state if it's not already there (to avoid duplicates)
+				const existingIndex = state.items.findIndex(item => item._id === action.payload._id);
+				if (existingIndex === -1) {
+					state.items.unshift(action.payload);
+				}
 			})
 			.addCase(confirmOrder.fulfilled, (state, action) => {
-				const idx = state.items.findIndex((o) => o._id === action.payload.order._id);
-				if (idx >= 0) state.items[idx] = action.payload.order;
+				const confirmedOrder = action.payload.order;
+				const idx = state.items.findIndex((o) => o._id === confirmedOrder._id);
+				if (idx >= 0) {
+					// Update the order with the confirmed status and invoice info
+					state.items[idx] = {
+						...state.items[idx],
+						status: confirmedOrder.status,
+						invoice: action.payload.invoice
+					};
+				}
 				state.lastInvoice = action.payload.invoice;
 			});
 	},

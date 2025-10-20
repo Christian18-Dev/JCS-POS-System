@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../features/productsSlice';
-import { createOrder as createOrderThunk, confirmOrder as confirmOrderThunk } from '../features/ordersSlice';
+import { createOrder as createOrderThunk, confirmOrder as confirmOrderThunk, fetchOrders } from '../features/ordersSlice';
 import { useNavigate } from 'react-router-dom';
 
 export default function NewOrder() {
@@ -17,7 +17,7 @@ export default function NewOrder() {
 	const [lastOrder, setLastOrder] = useState(null);
 	const [customerName, setCustomerName] = useState('');
 
-	useEffect(() => { dispatch(fetchProducts()); }, [dispatch]);
+	useEffect(() => { dispatch(fetchProducts({ page: 1, limit: 1000 })); }, [dispatch]);
 
 	useEffect(() => {
 		const handleEscape = (e) => {
@@ -127,6 +127,8 @@ export default function NewOrder() {
 				setCart([]);
 				// Clear customer info after order
 				setCustomerName('');
+				// Refresh the orders list to ensure UI shows updated status
+				dispatch(fetchOrders({ page: 1, limit: 10 }));
 			}
 		}
 	};
