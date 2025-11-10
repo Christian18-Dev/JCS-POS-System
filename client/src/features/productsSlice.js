@@ -10,11 +10,11 @@ const authHeader = (getState) => {
 	return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export const fetchProducts = createAsyncThunk('products/fetch', async ({ page = 1, limit = 10 } = {}, thunkAPI) => {
+export const fetchProducts = createAsyncThunk('products/fetch', async ({ page = 1, limit = 10, search = '' } = {}, thunkAPI) => {
 	try {
 		const res = await axios.get(`${API}/products`, { 
 			headers: authHeader(thunkAPI.getState),
-			params: { page, limit }
+			params: { page, limit, search }
 		});
 		return res.data;
 	} catch (err) {

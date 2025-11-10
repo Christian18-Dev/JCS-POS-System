@@ -23,8 +23,22 @@ export const loginUser = createAsyncThunk('auth/login', async (data, thunkAPI) =
 	}
 });
 
-const tokenFromStorage = localStorage.getItem('token');
-const userFromStorage = localStorage.getItem('user');
+const tokenFromStorage = sessionStorage.getItem('token');
+const userFromStorage = sessionStorage.getItem('user');
+
+export const verifyToken = createAsyncThunk('auth/verify', async (_data, thunkAPI) => {
+	try {
+		const state = thunkAPI.getState();
+		const token = state.auth.token;
+		if (!token) throw new Error('No token');
+		const res = await axios.get(`${API}/auth/me`, {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+		return res.data;
+	} catch (err) {
+		return thunkAPI.rejectWithValue('Invalid session');
+	}
+});
 
 const authSlice = createSlice({
 	name: 'auth',
@@ -38,8 +52,8 @@ const authSlice = createSlice({
 		logout(state) {
 			state.token = null;
 			state.user = null;
-			localStorage.removeItem('token');
-			localStorage.removeItem('user');
+			sessionStorage.removeItem('token');
+			sessionStorage.removeItem('user');
 		},
 	},
 	extraReducers: (builder) => {
@@ -52,8 +66,8 @@ const authSlice = createSlice({
 				state.status = 'succeeded';
 				state.token = action.payload.token;
 				state.user = action.payload.user;
-				localStorage.setItem('token', action.payload.token);
-				localStorage.setItem('user', JSON.stringify(action.payload.user));
+				sessionStorage.setItem('token', action.payload.token);
+				sessionStorage.setItem('user', JSON.stringify(action.payload.user));
 			})
 			.addCase(registerUser.rejected, (state, action) => {
 				state.status = 'failed';
@@ -67,12 +81,25 @@ const authSlice = createSlice({
 				state.status = 'succeeded';
 				state.token = action.payload.token;
 				state.user = action.payload.user;
-				localStorage.setItem('token', action.payload.token);
-				localStorage.setItem('user', JSON.stringify(action.payload.user));
+				sessionStorage.setItem('token', action.payload.token);
+				sessionStorage.setItem('user', JSON.stringify(action.payload.user));
 			})
 			.addCase(loginUser.rejected, (state, action) => {
 				state.status = 'failed';
 				state.error = action.payload;
+			})
+			.addCase(verifyToken.fulfilled, (state, action) => {
+				// Keep existing token; refresh user from server
+				const serverUser = action.payload.user;
+				state.user = serverUser;
+				sessionStorage.setItem('user', JSON.stringify(serverUser));
+			})
+			.addCase(verifyToken.rejected, (state) => {
+				// Invalid/expired -> clear session
+				state.token = null;
+				state.user = null;
+				sessionStorage.removeItem('token');
+				sessionStorage.removeItem('user');
 			});
 	},
 });

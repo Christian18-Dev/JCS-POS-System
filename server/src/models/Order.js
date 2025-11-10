@@ -15,7 +15,7 @@ const orderSchema = new mongoose.Schema(
     orderNumber: { type: String, unique: true },
     items: { type: [orderItemSchema], required: true, default: [] },
     totalAmount: { type: Number, required: true, min: 0 },
-    status: { type: String, enum: ['pending', 'confirmed'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'confirmed'], default: 'confirmed' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } }

@@ -5,27 +5,82 @@ import { Invoice } from '../models/Invoice.js';
 import { createInvoiceForOrder } from '../utils/invoice.js';
 
 export const createOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    const { items } = req.body; // [{product, qty}]
-    if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ message: 'No items' });
+    const { items, customerName } = req.body; // [{product, qty}]
+    if (!Array.isArray(items) || items.length === 0) {
+      throw Object.assign(new Error('No items'), { statusCode: 400 });
+    }
 
-    const productIds = items.map((i) => i.product);
-    const products = await Product.find({ _id: { $in: productIds } });
+    const uniqueProductIds = [...new Set(items.map((i) => i.product))];
+    const products = await Product.find({ _id: { $in: uniqueProductIds } }).session(session);
     const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+    const usageMap = new Map();
 
     const computedItems = items.map((i) => {
-      const p = productMap.get(i.product);
-      if (!p) throw new Error('Invalid product');
-      const price = p.price;
-      const qty = Number(i.qty) || 1;
-      return { product: p._id, price, qty, subtotal: price * qty };
+      const productId = i.product?.toString();
+      const product = productMap.get(productId);
+      if (!product) {
+        throw Object.assign(new Error('Invalid product'), { statusCode: 400 });
+      }
+
+      const qty = Math.max(Number(i.qty) || 1, 1);
+      const price = product.price;
+
+      const totalRequested = (usageMap.get(productId) || 0) + qty;
+      if (totalRequested > product.stock) {
+        throw Object.assign(new Error(`Insufficient stock for ${product.name}`), { statusCode: 400 });
+      }
+      usageMap.set(productId, totalRequested);
+
+      return { product: product._id, price, qty, subtotal: price * qty };
     });
+
     const totalAmount = computedItems.reduce((sum, i) => sum + i.subtotal, 0);
 
-    const order = await Order.create({ items: computedItems, totalAmount, createdBy: req.user._id });
-    res.status(201).json(order);
+    const [order] = await Order.create(
+      [
+        {
+          items: computedItems,
+          totalAmount,
+          status: 'confirmed',
+          createdBy: req.user._id,
+        },
+      ],
+      { session }
+    );
+
+    for (const [productId, qtyUsed] of usageMap.entries()) {
+      const product = productMap.get(productId);
+      product.stock -= qtyUsed;
+      await product.save({ session });
+    }
+
+    const invoice = await createInvoiceForOrder(order, {
+      session,
+      customerName: customerName || '',
+    });
+
+    await order.populate({ path: 'items.product', session });
+
+    const orderData = order.toObject();
+    orderData.invoice = invoice
+      ? {
+          invoiceNumber: invoice.invoiceNumber,
+          customerName: invoice.customerName,
+        }
+      : null;
+
+    await session.commitTransaction();
+    res.status(201).json({ order: orderData, invoice });
   } catch (err) {
-    res.status(500).json({ message: 'Create order failed' });
+    await session.abortTransaction();
+    const status = err?.statusCode || 500;
+    const message = err?.statusCode ? err.message : 'Create order failed';
+    res.status(status).json({ message });
+  } finally {
+    session.endSession();
   }
 };
 

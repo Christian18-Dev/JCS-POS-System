@@ -17,9 +17,21 @@ export const listProducts = async (req, res) => {
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
   const skip = (page - 1) * limit;
+  const search = (req.query.search || '').toString().trim();
 
-  const totalItems = await Product.countDocuments();
-  const products = await Product.find()
+  // Build filter for case-insensitive partial match on name, sku, or category
+  const filter = search
+    ? {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { sku: { $regex: search, $options: 'i' } },
+          { category: { $regex: search, $options: 'i' } },
+        ],
+      }
+    : {};
+
+  const totalItems = await Product.countDocuments(filter);
+  const products = await Product.find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);

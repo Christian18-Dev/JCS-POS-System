@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../features/productsSlice';
-import { createOrder as createOrderThunk, confirmOrder as confirmOrderThunk, fetchOrders } from '../features/ordersSlice';
+import { createOrder as createOrderThunk, fetchOrders } from '../features/ordersSlice';
 import { useNavigate } from 'react-router-dom';
 
 export default function NewOrder() {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const { items: products } = useSelector((s) => s.products);
-	const { lastInvoice } = useSelector((s) => s.orders);
 	const [cart, setCart] = useState([]);
 	const [showErrorModal, setShowErrorModal] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
@@ -111,25 +110,18 @@ export default function NewOrder() {
 
 	const createOrder = async () => {
 		const items = cart.map(i => ({ product: i.product, qty: i.qty }));
-		const action = await dispatch(createOrderThunk({ items }));
+		const action = await dispatch(createOrderThunk({ 
+			items, 
+			customerName: customerName.trim() 
+		}));
 		if (action.meta.requestStatus === 'fulfilled') {
-			const orderId = action.payload._id;
-			const confirmAction = await dispatch(confirmOrderThunk({ 
-				orderId, 
-				customerName 
-			}));
-			if (confirmAction.meta.requestStatus === 'fulfilled') {
-				// Use the confirmed order data directly
-				const confirmedOrder = confirmAction.payload;
-				setLastOrder(confirmedOrder);
-				setShowInvoiceModal(true);
-				setShowCartModal(false);
-				setCart([]);
-				// Clear customer info after order
-				setCustomerName('');
-				// Refresh the orders list to ensure UI shows updated status
-				dispatch(fetchOrders({ page: 1, limit: 10 }));
-			}
+			const createdOrder = action.payload;
+			setLastOrder(createdOrder);
+			setShowInvoiceModal(true);
+			setShowCartModal(false);
+			setCart([]);
+			setCustomerName('');
+			dispatch(fetchOrders({ page: 1, limit: 10 }));
 		}
 	};
 
@@ -156,11 +148,11 @@ export default function NewOrder() {
 								className="relative bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-colors flex items-center text-sm sm:text-base"
 							>
 								<span className="text-lg mr-1 sm:mr-2">🛒</span>
-								<span className="hidden sm:inline">Shopping Cart</span>
+								<span className="hidden sm:inline">Cart</span>
 								<span className="sm:hidden">Cart</span>
 								{cart.length > 0 && (
 									<span className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center">
-										{cart.length}
+										{cart.reduce((sum, item) => sum + item.qty, 0)}
 									</span>
 								)}
 							</button>
@@ -222,7 +214,7 @@ export default function NewOrder() {
 							<div className="flex items-center justify-between">
 								<h2 className="text-xl sm:text-2xl font-semibold text-gray-900 flex items-center">
 									<span className="text-xl sm:text-2xl mr-2 sm:mr-3">🛒</span>
-									<span className="truncate">Shopping Cart ({cart.length})</span>
+									<span className="truncate">Cart ({cart.length})</span>
 								</h2>
 								<button 
 									onClick={closeCartModal}

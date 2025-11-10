@@ -84,53 +84,86 @@ export default function Orders() {
 	return (
 		<div className="p-4 sm:p-6">
 			<h1 className="text-2xl sm:text-3xl font-bold mb-6">Orders</h1>
-			<div className="overflow-x-auto border rounded">
-				<table className="w-full text-left min-w-[500px]">
+			{/* Mobile card view */}
+			<div className="md:hidden space-y-3 mb-4">
+				{items.length === 0 ? (
+					<div className="border rounded-lg bg-white p-4 text-center text-sm text-gray-500">
+						No orders yet. Create a new order to get started.
+					</div>
+				) : (
+					items.map((order) => (
+						<button
+							key={order._id}
+							onClick={() => openInvoiceModal(order)}
+							className="w-full bg-white border border-gray-200 rounded-lg shadow-sm text-left p-4 space-y-3 active:shadow-md transition-shadow"
+						>
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-xs text-gray-500 uppercase tracking-wide">Order</p>
+									<p className="text-sm font-semibold text-gray-900">{order.orderNumber || order._id}</p>
+								</div>
+								<span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+									order.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+								}`}>
+									{order.status}
+								</span>
+							</div>
+							<div className="flex items-center justify-between text-sm text-gray-600">
+								<span>{order.items.reduce((s, i) => s + i.qty, 0)} items</span>
+								<span className="font-semibold text-gray-900">₱{Number(order.totalAmount).toLocaleString()}</span>
+							</div>
+							<div className="text-xs text-gray-500">
+								Created {new Date(order.createdAt).toLocaleString()}
+							</div>
+						</button>
+					))
+				)}
+			</div>
+
+			{/* Desktop table */}
+			<div className="hidden md:block overflow-x-auto border rounded bg-white">
+				<table className="w-full text-left min-w-[640px]">
 					<thead>
-						<tr className="border-b bg-gray-100">
-							<th className="p-2 sm:p-3">Order ID</th>
-							<th className="p-2 sm:p-3">Items</th>
-							<th className="p-2 sm:p-3">Total</th>
-							<th className="p-2 sm:p-3">Status</th>
-							<th className="p-2 sm:p-3 hidden sm:table-cell">Created</th>
+						<tr className="border-b bg-gray-50 text-sm">
+							<th className="p-3 font-medium text-gray-600">Order ID</th>
+							<th className="p-3 font-medium text-gray-600">Items</th>
+							<th className="p-3 font-medium text-gray-600">Total</th>
+							<th className="p-3 font-medium text-gray-600">Status</th>
+							<th className="p-3 font-medium text-gray-600">Created</th>
 						</tr>
 					</thead>
-					<tbody className="h-[400px]">
-						{Array.from({ length: 10 }, (_, index) => {
-							const order = items[index];
-							if (order) {
-								return (
-									<tr 
-										key={order._id} 
-										className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
-										onClick={() => openInvoiceModal(order)}
-									>
-										<td className="p-2 sm:p-3 text-xs sm:text-sm">{order.orderNumber || order._id}</td>
-										<td className="p-2 sm:p-3 text-sm">{order.items.reduce((s,i)=>s + i.qty,0)} items</td>
-										<td className="p-2 sm:p-3 font-medium">₱{order.totalAmount}</td>
-										<td className="p-2 sm:p-3">
-											<span className={`px-2 py-1 rounded text-xs ${order.status==='confirmed'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}`}>
-												{order.status}
-											</span>
-										</td>
-										<td className="p-2 sm:p-3 text-sm hidden sm:table-cell">{new Date(order.createdAt).toLocaleString()}</td>
-									</tr>
-								);
-							} else {
-								return (
-									<tr key={`empty-${index}`} className="border-b">
-										<td className="p-2 sm:p-3 text-xs sm:text-sm">&nbsp;</td>
-										<td className="p-2 sm:p-3 text-sm">&nbsp;</td>
-										<td className="p-2 sm:p-3 font-medium">&nbsp;</td>
-										<td className="p-2 sm:p-3">&nbsp;</td>
-										<td className="p-2 sm:p-3 text-sm hidden sm:table-cell">&nbsp;</td>
-									</tr>
-								);
-							}
-						})}
+					<tbody className="divide-y divide-gray-100">
+						{items.length === 0 ? (
+							<tr>
+								<td colSpan={5} className="p-6 text-center text-sm text-gray-500">
+									No orders yet. Create a new order to get started.
+								</td>
+							</tr>
+						) : (
+							items.map((order) => (
+								<tr
+									key={order._id}
+									className="hover:bg-gray-50 cursor-pointer transition-colors"
+									onClick={() => openInvoiceModal(order)}
+								>
+									<td className="p-3 text-sm text-gray-700">{order.orderNumber || order._id}</td>
+									<td className="p-3 text-sm text-gray-700">{order.items.reduce((s, i) => s + i.qty, 0)} items</td>
+									<td className="p-3 text-sm font-semibold text-gray-900">₱{Number(order.totalAmount).toLocaleString()}</td>
+									<td className="p-3 text-sm">
+										<span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+											order.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+										}`}>
+											{order.status}
+										</span>
+									</td>
+									<td className="p-3 text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</td>
+								</tr>
+							))
+						)}
 					</tbody>
 				</table>
 			</div>
+
 			<div className="flex items-center justify-between mt-4">
 				<p className="text-xs sm:text-sm text-gray-500">Click on any order to view its invoice details.</p>
 				<div className="flex items-center space-x-2">
@@ -158,7 +191,7 @@ export default function Orders() {
 					className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4"
 					onClick={(e) => e.target === e.currentTarget && closeInvoiceModal()}
 				>
-					<div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
+					<div className="bg-white rounded-lg shadow-xl w-full max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-hidden">
 						{/* Modal Header */}
 						<div className="no-print flex justify-between items-center p-4 border-b bg-gray-50">
 							<h2 className="text-lg font-semibold text-gray-900">Invoice Preview</h2>
@@ -182,7 +215,7 @@ export default function Orders() {
 						</div>
 
 						{/* Printable Invoice */}
-						<div className="overflow-y-auto max-h-[calc(95vh-80px)] p-6">
+						<div className="overflow-y-auto max-h-[calc(95vh-80px)] p-4 sm:p-6">
 							<div id="invoice-content" className="max-w-4xl mx-auto bg-white">
 								{/* Company Header */}
 								<div className="text-center mb-8 border-b-2 border-gray-300 pb-6">
@@ -205,28 +238,44 @@ export default function Orders() {
 									</div>
 								</div>
 
-								{/* Items Table */}
+								{/* Items */}
 								<div className="mb-8">
-									<table className="w-full border-collapse border border-gray-300">
-										<thead>
-											<tr className="bg-gray-100">
-												<th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Item</th>
-												<th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700">Qty</th>
-												<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Unit Price</th>
-												<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Total</th>
-											</tr>
-										</thead>
-										<tbody>
-											{selectedOrder.items.map((item, index) => (
-												<tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-													<td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{item.product.name}</td>
-													<td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-900">{item.qty}</td>
-													<td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₱{item.product.price.toFixed(2)}</td>
-													<td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₱{(item.product.price * item.qty).toFixed(2)}</td>
+									<div className="md:hidden space-y-3">
+										{selectedOrder.items.map((item, index) => (
+											<div key={index} className="border border-gray-200 rounded-lg p-4 shadow-sm bg-gray-50/80">
+												<div className="flex items-center justify-between mb-2">
+													<p className="text-sm font-semibold text-gray-900">{item.product.name}</p>
+													<p className="text-sm font-semibold text-gray-900">₱{(item.product.price * item.qty).toFixed(2)}</p>
+												</div>
+												<div className="flex items-center justify-between text-xs text-gray-600">
+													<span>Qty: <span className="font-semibold text-gray-800">{item.qty}</span></span>
+													<span>Unit: ₱{item.product.price.toFixed(2)}</span>
+												</div>
+											</div>
+										))}
+									</div>
+									<div className="hidden md:block">
+										<table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+											<thead>
+												<tr className="bg-gray-100">
+													<th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Item</th>
+													<th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700">Qty</th>
+													<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Unit Price</th>
+													<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Total</th>
 												</tr>
-											))}
-										</tbody>
-									</table>
+											</thead>
+											<tbody>
+												{selectedOrder.items.map((item, index) => (
+													<tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+														<td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{item.product.name}</td>
+														<td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-900">{item.qty}</td>
+														<td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₱{item.product.price.toFixed(2)}</td>
+														<td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₱{(item.product.price * item.qty).toFixed(2)}</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
 								</div>
 
 								{/* Totals */}

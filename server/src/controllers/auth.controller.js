@@ -40,4 +40,14 @@ export const login = async (req, res) => {
   }
 };
 
+export const me = async (req, res) => {
+  try {
+    // `authenticate` middleware already attached `req.user`
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    return res.json({ user: req.user });
+  } catch (_err) {
+    return res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+};
+
 

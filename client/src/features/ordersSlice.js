@@ -56,11 +56,20 @@ const ordersSlice = createSlice({
 				state.totalItems = action.payload.totalItems;
 			})
 			.addCase(createOrder.fulfilled, (state, action) => {
-				// Only add to state if it's not already there (to avoid duplicates)
-				const existingIndex = state.items.findIndex(item => item._id === action.payload._id);
+				const { order, invoice } = action.payload || {};
+				if (!order) return;
+
+				const hydratedOrder = invoice && !order.invoice
+					? { ...order, invoice: { invoiceNumber: invoice.invoiceNumber, customerName: invoice.customerName } }
+					: order;
+
+				const existingIndex = state.items.findIndex(item => item._id === hydratedOrder._id);
 				if (existingIndex === -1) {
-					state.items.unshift(action.payload);
+					state.items.unshift(hydratedOrder);
+				} else {
+					state.items[existingIndex] = hydratedOrder;
 				}
+				state.lastInvoice = invoice || null;
 			})
 			.addCase(confirmOrder.fulfilled, (state, action) => {
 				const confirmedOrder = action.payload.order;
