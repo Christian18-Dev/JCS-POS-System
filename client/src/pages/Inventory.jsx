@@ -147,15 +147,15 @@ export default function Inventory() {
 							)}
 						</div>
 					</div>
-					{user?.role === 'admin' && (
-						<button 
-							onClick={openModal}
-							className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded disabled:opacity-50 transition-colors text-base touch-manipulation"
-						>
-							Add New Item
-						</button>
-					)}
-				</div>
+				{user?.role === 'admin' && (
+					<button 
+						onClick={openModal}
+						className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded disabled:opacity-50 transition-colors text-base touch-manipulation"
+					>
+						Add New Item
+					</button>
+				)}
+			</div>
 			</div>
 
 			{/* Client-side search filters only the currently loaded page */}
@@ -431,12 +431,12 @@ export default function Inventory() {
 													value={editForm.name}
 													onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
 												/>
-											) : (
+												) : (
 												<div className="flex flex-col">
 													<span className="font-semibold text-gray-900">{product.name}</span>
-												</div>
-											)}
-										</td>
+													</div>
+												)}
+											</td>
 										<td className="p-3 text-xs text-gray-500">{product.sku}</td>
 										<td className="p-3">
 											{editingId === product._id ? (
@@ -449,7 +449,7 @@ export default function Inventory() {
 											) : (
 												`₱${Number(product.price).toLocaleString()}`
 											)}
-										</td>
+											</td>
 										<td className="p-3">
 											{editingId === product._id ? (
 												<input
@@ -461,7 +461,7 @@ export default function Inventory() {
 											) : (
 												product.stock
 											)}
-										</td>
+											</td>
 										<td className="p-3">
 											{editingId === product._id ? (
 												<input
@@ -472,55 +472,55 @@ export default function Inventory() {
 											) : (
 												product.category || '-'
 											)}
-										</td>
+											</td>
 										{user?.role === 'admin' && (
 											<td className="p-3 text-right">
 												{editingId === product._id ? (
 													<div className="inline-flex gap-2">
-														<button
+															<button 
 															className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-60"
 															onClick={() => saveEdit(product._id)}
-															disabled={loading}
-														>
-															{loading ? 'Saving...' : 'Save'}
-														</button>
-														<button
+																disabled={loading}
+															>
+																{loading ? 'Saving...' : 'Save'}
+															</button>
+															<button 
 															className="px-3 py-1.5 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium transition-colors disabled:opacity-60"
 															onClick={() => setEditingId(null)}
-															disabled={loading}
-														>
-															Cancel
-														</button>
-													</div>
-												) : (
+																disabled={loading}
+															>
+																Cancel
+															</button>
+														</div>
+													) : (
 													<div className="inline-flex gap-2">
-														<button
+															<button 
 															className="inline-flex justify-center items-center p-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-60"
 															onClick={() => startEdit(product)}
-															disabled={loading}
+																disabled={loading}
 															aria-label="Edit product"
 															title="Edit"
-														>
+															>
 															<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 																<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h2m-7 7h8m-8 4h8m1.586-11.414l2.828 2.828M16 3l3.586 3.586a2 2 0 010 2.828l-8.486 8.486A2 2 0 019.172 19H6v-3.172a2 2 0 01.586-1.414l8.414-8.414A2 2 0 0116 3z" />
 															</svg>
-														</button>
-														<button
+															</button>
+															<button 
 															className="inline-flex justify-center items-center p-2 rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60"
 															onClick={() => remove(product._id)}
-															disabled={loading}
+																disabled={loading}
 															aria-label="Delete product"
 															title="Delete"
-														>
+															>
 															<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 																<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10" />
 															</svg>
-														</button>
-													</div>
-												)}
-											</td>
-										)}
-									</tr>
+															</button>
+														</div>
+													)}
+												</td>
+											)}
+										</tr>
 								))
 							)}
 						</tbody>

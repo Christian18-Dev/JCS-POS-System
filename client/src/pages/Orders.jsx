@@ -141,11 +141,11 @@ export default function Orders() {
 							</tr>
 						) : (
 							items.map((order) => (
-								<tr
-									key={order._id}
+									<tr 
+										key={order._id} 
 									className="hover:bg-gray-50 cursor-pointer transition-colors"
-									onClick={() => openInvoiceModal(order)}
-								>
+										onClick={() => openInvoiceModal(order)}
+									>
 									<td className="p-3 text-sm text-gray-700">{order.orderNumber || order._id}</td>
 									<td className="p-3 text-sm text-gray-700">{order.items.reduce((s, i) => s + i.qty, 0)} items</td>
 									<td className="p-3 text-sm font-semibold text-gray-900">₱{Number(order.totalAmount).toLocaleString()}</td>
@@ -153,11 +153,11 @@ export default function Orders() {
 										<span className={`px-2 py-1 rounded-full text-xs font-semibold ${
 											order.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
 										}`}>
-											{order.status}
-										</span>
-									</td>
+												{order.status}
+											</span>
+										</td>
 									<td className="p-3 text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</td>
-								</tr>
+									</tr>
 							))
 						)}
 					</tbody>
@@ -256,25 +256,25 @@ export default function Orders() {
 									</div>
 									<div className="hidden md:block">
 										<table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
-											<thead>
-												<tr className="bg-gray-100">
-													<th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Item</th>
-													<th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700">Qty</th>
-													<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Unit Price</th>
-													<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Total</th>
+										<thead>
+											<tr className="bg-gray-100">
+												<th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Item</th>
+												<th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700">Qty</th>
+												<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Unit Price</th>
+												<th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Total</th>
+											</tr>
+										</thead>
+										<tbody>
+											{selectedOrder.items.map((item, index) => (
+												<tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+													<td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{item.product.name}</td>
+													<td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-900">{item.qty}</td>
+													<td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₱{item.product.price.toFixed(2)}</td>
+													<td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₱{(item.product.price * item.qty).toFixed(2)}</td>
 												</tr>
-											</thead>
-											<tbody>
-												{selectedOrder.items.map((item, index) => (
-													<tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-														<td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{item.product.name}</td>
-														<td className="border border-gray-300 px-4 py-3 text-center text-sm text-gray-900">{item.qty}</td>
-														<td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₱{item.product.price.toFixed(2)}</td>
-														<td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₱{(item.product.price * item.qty).toFixed(2)}</td>
-													</tr>
-												))}
-											</tbody>
-										</table>
+											))}
+										</tbody>
+									</table>
 									</div>
 								</div>
 

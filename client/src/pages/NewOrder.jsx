@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 export default function NewOrder() {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-	const { items: products } = useSelector((s) => s.products);
+	const { items: products, page, totalPages, totalItems, pageSize, status } = useSelector((s) => s.products);
 	const [cart, setCart] = useState([]);
 	const [showErrorModal, setShowErrorModal] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
@@ -15,8 +15,26 @@ export default function NewOrder() {
 	const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 	const [lastOrder, setLastOrder] = useState(null);
 	const [customerName, setCustomerName] = useState('');
+	const [query, setQuery] = useState('');
 
-	useEffect(() => { dispatch(fetchProducts({ page: 1, limit: 1000 })); }, [dispatch]);
+	// Initial load
+	useEffect(() => { 
+		dispatch(fetchProducts({ page: 1, limit: 12, search: '' })); 
+	}, [dispatch]);
+
+	// Debounced search
+	useEffect(() => {
+		const handle = setTimeout(() => {
+			dispatch(fetchProducts({ page: 1, limit: pageSize || 12, search: (query || '').trim() }));
+		}, 300);
+		return () => clearTimeout(handle);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [query]);
+
+	const goToPage = (p) => {
+		if (p < 1 || p > totalPages) return;
+		dispatch(fetchProducts({ page: p, limit: pageSize || 12, search: (query || '').trim() }));
+	};
 
 	useEffect(() => {
 		const handleEscape = (e) => {
@@ -161,14 +179,12 @@ export default function NewOrder() {
 				</div>
 			</div>
 
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-				{/* Error Modal */}
-				{showErrorModal && (
-					<div 
-						className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4"
-						onClick={(e) => e.target === e.currentTarget && closeErrorModal()}
-					>
+			{/* Error Modal */}
+			{showErrorModal && (
+				<div 
+					className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50 p-4"
+					onClick={(e) => e.target === e.currentTarget && closeErrorModal()}
+				>
 					<div className="bg-white rounded-lg shadow-xl w-full max-w-md">
 						<div className="flex justify-between items-center p-6 border-b">
 							<h2 className="text-xl font-semibold text-red-600">Out of Stock</h2>
@@ -381,79 +397,146 @@ export default function NewOrder() {
 			<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				{/* Products Section */}
 				<div className="space-y-6">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 						<h2 className="text-xl font-semibold text-gray-900 flex items-center">
 							<svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
 							</svg>
-							Products ({products.length})
+							Products
 						</h2>
-						<div className="text-sm text-gray-500">
-							{products.filter(p => p.stock > 0).length} available
+						<div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+							<div className="flex-1 sm:flex-initial">
+								<div className="relative">
+									<input
+										type="text"
+										value={query}
+										onChange={(e) => setQuery(e.target.value)}
+										placeholder="Search"
+										className="w-full sm:w-80 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+										aria-label="Search products"
+									/>
+									{query && (
+										<button
+											onClick={() => setQuery('')}
+											className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+											aria-label="Clear search"
+											title="Clear"
+										>
+											✕
+										</button>
+									)}
+								</div>
+							</div>
+							<div className="text-sm text-gray-500">
+								{products.filter(p => p.stock > 0).length} available
+							</div>
 						</div>
 					</div>
 					
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						{products.map(p => (
-							<div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
-								<div className="p-6">
-									<div className="flex items-start justify-between mb-4">
-										<div className="flex-1">
-											<h3 className="text-lg font-semibold text-gray-900 mb-1">{p.name}</h3>
-											<div className="flex items-center space-x-2 mb-2">
-												<span className="text-2xl font-bold text-blue-600">₱{p.price}</span>
-												{p.category && (
-													<span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-														{p.category}
-													</span>
-												)}
-											</div>
-											<div className="flex items-center space-x-2">
-												<div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-													p.stock <= 0 
-														? 'bg-red-100 text-red-800' 
-														: p.stock <= 5 
-														? 'bg-yellow-100 text-yellow-800' 
-														: 'bg-green-100 text-green-800'
-												}`}>
-													<svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-														<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-													</svg>
-													{p.stock <= 0 ? 'Out of Stock' : `${p.stock} in stock`}
+					{status === 'loading' ? (
+						<div className="flex justify-center items-center py-12">
+							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+							<p className="ml-3 text-gray-600">Loading products...</p>
+						</div>
+					) : products.length === 0 ? (
+						<div className="bg-white border border-dashed border-gray-300 rounded-lg p-8 text-center">
+							<p className="text-gray-500">
+								{query.trim() ? 'No products match your search.' : 'No products available.'}
+							</p>
+						</div>
+					) : (
+						<>
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								{products.map(p => (
+									<div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
+										<div className="p-6">
+											<div className="flex items-start justify-between mb-4">
+												<div className="flex-1">
+													<h3 className="text-lg font-semibold text-gray-900 mb-1">{p.name}</h3>
+													<div className="flex items-center space-x-2 mb-2">
+														<span className="text-2xl font-bold text-blue-600">₱{p.price}</span>
+														{p.category && (
+															<span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+																{p.category}
+															</span>
+														)}
+													</div>
+													<div className="flex items-center space-x-2">
+														<div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+															p.stock <= 0 
+																? 'bg-red-100 text-red-800' 
+																: p.stock <= 5 
+																? 'bg-yellow-100 text-yellow-800' 
+																: 'bg-green-100 text-green-800'
+														}`}>
+															<svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+																<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+															</svg>
+															{p.stock <= 0 ? 'Out of Stock' : `${p.stock} in stock`}
+														</div>
+													</div>
 												</div>
 											</div>
+											<button 
+												className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+													p.stock <= 0 
+														? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+														: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:-translate-y-0.5'
+												}`}
+												onClick={() => addToCart(p)}
+												disabled={p.stock <= 0}
+											>
+												{p.stock <= 0 ? (
+													<div className="flex items-center justify-center">
+														<svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+															<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+														</svg>
+														Out of Stock
+													</div>
+												) : (
+													<div className="flex items-center justify-center">
+														<svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+															<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+														</svg>
+														Add to Cart
+													</div>
+												)}
+											</button>
 										</div>
 									</div>
-									<button 
-										className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-											p.stock <= 0 
-												? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-												: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transform hover:-translate-y-0.5'
-										}`}
-										onClick={() => addToCart(p)}
-										disabled={p.stock <= 0}
-									>
-										{p.stock <= 0 ? (
-											<div className="flex items-center justify-center">
-												<svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-												</svg>
-												Out of Stock
-											</div>
-										) : (
-											<div className="flex items-center justify-center">
-												<svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-												</svg>
-												Add to Cart
-											</div>
-										)}
-						</button>
-								</div>
+								))}
 							</div>
-						))}
-					</div>
-					</div>
+							
+							{/* Pagination Controls */}
+							{totalPages > 1 && (
+								<div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+									<p className="text-xs sm:text-sm text-gray-500">
+										{(query || '').trim()
+											? `Filtered results: ${products.length} of ${totalItems}`
+											: `Showing ${products.length} of ${totalItems} products`
+										}
+									</p>
+									<div className="flex items-center space-x-2">
+										<button
+											className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors"
+											disabled={page <= 1}
+											onClick={() => goToPage(page - 1)}
+										>
+											Prev
+										</button>
+										<span className="text-sm">Page {page} of {totalPages}</span>
+										<button
+											className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors"
+											disabled={page >= totalPages}
+											onClick={() => goToPage(page + 1)}
+										>
+											Next
+										</button>
+									</div>
+								</div>
+							)}
+						</>
+					)}
 				</div>
 			</div>
 
