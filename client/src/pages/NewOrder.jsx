@@ -63,13 +63,15 @@ export default function NewOrder() {
 				const newQty = copy[idx].qty + 1;
 				
 				// Check if adding one more would exceed available stock
-				if (newQty > p.stock) {
-					setErrorMessage(`Cannot add more "${p.name}". Only ${p.stock} items available in stock.`);
+				// Use current product stock or fallback to stored stock
+				const currentStock = p.stock ?? copy[idx].stock ?? 0;
+				if (newQty > currentStock) {
+					setErrorMessage(`Cannot add more "${p.name}". Only ${currentStock} items available in stock.`);
 					setShowErrorModal(true);
 					return prev; // Return unchanged cart
 				}
 				
-				copy[idx] = { ...copy[idx], qty: newQty };
+				copy[idx] = { ...copy[idx], qty: newQty, stock: p.stock };
 				return copy;
 			}
 			
@@ -80,7 +82,7 @@ export default function NewOrder() {
 				return prev; // Return unchanged cart
 			}
 			
-			return [...prev, { product: p._id, name: p.name, price: p.price, qty: 1 }];
+			return [...prev, { product: p._id, name: p.name, price: p.price, qty: 1, stock: p.stock }];
 		});
 	};
 
@@ -90,15 +92,24 @@ export default function NewOrder() {
 			return;
 		}
 		
+		// Find product in current page or use cart item's stored stock
 		const product = products.find(p => p._id === productId);
-		if (newQty > product.stock) {
-			setErrorMessage(`Cannot add more "${product.name}". Only ${product.stock} items available in stock.`);
+		const cartItem = cart.find(item => item.product === productId);
+		
+		// Use current product stock if available, otherwise use stored stock from cart
+		const currentStock = product?.stock ?? cartItem?.stock ?? 0;
+		const productName = product?.name ?? cartItem?.name ?? 'Product';
+		
+		if (newQty > currentStock) {
+			setErrorMessage(`Cannot add more "${productName}". Only ${currentStock} items available in stock.`);
 			setShowErrorModal(true);
 			return;
 		}
 		
 		setCart(prev => prev.map(item => 
-			item.product === productId ? { ...item, qty: newQty } : item
+			item.product === productId 
+				? { ...item, qty: newQty, stock: product?.stock ?? item.stock } 
+				: item
 		));
 	};
 
@@ -272,6 +283,8 @@ export default function NewOrder() {
 								<div className="divide-y divide-gray-200">
 									{cart.map(i => {
 										const product = products.find(p => p._id === i.product);
+										// Use current product stock if available, otherwise use stored stock from cart
+										const currentStock = product?.stock ?? i.stock ?? 0;
 										return (
 											<div key={i.product} className="p-3 sm:p-6 hover:bg-gray-50 transition-colors">
 												<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -296,7 +309,7 @@ export default function NewOrder() {
 															</span>
 															<button
 																onClick={() => updateQuantity(i.product, i.qty + 1)}
-																disabled={i.qty >= product.stock}
+																disabled={i.qty >= currentStock}
 																className="p-2 sm:p-3 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 															>
 																<svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
